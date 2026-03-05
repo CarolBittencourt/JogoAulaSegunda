@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Derby | Modern Horse Racing Simulator</title>
+    <meta name="description" content="A sleek, high-contrast minimalist horse racing simulation. Choose your horse, place your bet, and watch the race unfold in a sophisticated digital derby.">
+    
+    <!-- Open Graph / SEO -->
+    <meta property="og:title" content="Minimalist Derby">
+    <meta property="og:description" content="Advanced Horse Racing Simulation with Modern UI.">
+    <meta property="og:type" content="website">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">Minimalist Derby</div>
+        <div class="balance-container">
+            <span class="balance-label">Seu Saldo</span>
+            <span class="balance-amount" id="balanceText">$1,000.00</span>
+        </div>
+    </header>
+
+    <main>
+        <div id="track">
+            <!-- Horses will be injected here by script.js -->
+            <div class="finish-line-label">Linha de Chegada</div>
+        </div>
+    </main>
+
+    <section class="betting-panel">
+        <div class="horses-selection" id="horseSelection">
+            <!-- Cards will be injected here by script.js -->
+        </div>
+
+        <div class="controls">
+            <div class="input-group">
+                <label for="betAmount">Valor da Aposta</label>
+                <input type="number" id="betAmount" min="1" step="10" placeholder="Digite o valor...">
+            </div>
+            <button id="startRaceBtn" disabled>Iniciar Corrida</button>
+            <button id="resetBalanceBtn" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); margin-top: 10px; font-size: 0.7rem;">Resetar Saldo</button>
+        </div>
+    </section>
+
+    <!-- Results Modal -->
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="resultTitle">VOCÊ VENCEU!</h2>
+            <p id="resultMessage">O Cavalo #2 cruzou a linha primeiro.</p>
+            <div class="payout" id="resultPayout">+$500.00</div>
+            <button id="closeModalBtn">Nova Corrida</button>
+        </div>
+    </div>
+
+    <!-- Hidden template for horse asset -->
+    <script id="horseAssetPath" type="text/plain">
+        /* This is where the JS will find the asset path */
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
