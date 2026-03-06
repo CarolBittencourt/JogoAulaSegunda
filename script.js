@@ -14,7 +14,7 @@ let gameState = {
     betAmount: 0,
     isRacing: false,
     horses: [],
-    timerSeconds: 60,
+    timerSeconds: 10,
     timerInterval: null,
     lastTickTime: 0
 };
@@ -128,8 +128,8 @@ function startRace() {
         h.currentSpeed = 0;
     });
 
-    // Chronometer (60s)
-    gameState.timerSeconds = 60;
+    // Chronometer (10s)
+    gameState.timerSeconds = 10;
     updateTimerDisplay();
     clearInterval(gameState.timerInterval);
     gameState.timerInterval = setInterval(() => {
@@ -158,8 +158,8 @@ function raceLoop() {
 
     if (delta > 1000 || gameState.lastTickTime === 0) {
         gameState.horses.forEach(h => {
-            const baseMin = 0.015;
-            const baseMax = 0.038;
+            const baseMin = 0.12;
+            const baseMax = 0.22;
             h.currentSpeed = Math.random() * (baseMax - baseMin) + baseMin;
         });
         gameState.lastTickTime = now;
@@ -226,7 +226,7 @@ function updateBalanceDisplay() {
 function resetGame() {
     gameState.selectedHorse = null;
     gameState.isRacing = false;
-    gameState.timerSeconds = 60;
+    gameState.timerSeconds = 10;
     updateTimerDisplay();
     betInput.disabled = false;
     betInput.value = '';
