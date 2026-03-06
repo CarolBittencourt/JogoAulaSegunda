@@ -34,6 +34,7 @@ const startBtn = document.getElementById('startRaceBtn');
 const resetBtn = document.getElementById('resetBalanceBtn');
 const resultModal = document.getElementById('resultModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
+const exitBtn = document.getElementById('exitBtn');
 
 // --- Initialization ---
 
@@ -65,8 +66,19 @@ function renderUI() {
     // Render Horse Cards
     horseSelection.innerHTML = '';
     gameState.horses.forEach(horse => {
+        const isSelected = gameState.selectedHorse === horse.id;
         const card = document.createElement('div');
-        card.className = `horse-card ${gameState.selectedHorse === horse.id ? 'selected' : ''}`;
+        card.className = `horse-card ${isSelected ? 'selected' : ''}`;
+
+        // Dynamic border color if selected
+        if (isSelected) {
+            card.style.borderColor = horse.color;
+            card.style.boxShadow = `0 0 15px ${horse.color}44`;
+        } else {
+            card.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            card.style.boxShadow = 'none';
+        }
+
         card.innerHTML = `
             <div class="name">${horse.name}</div>
             <div class="odds">${horse.odds}x</div>
@@ -141,6 +153,11 @@ function setupEventListeners() {
         resultModal.style.display = 'none';
         resetRace();
     };
+
+    exitBtn.onclick = () => {
+        resultModal.style.display = 'none';
+        resetRace(); // Returns to selection state
+    };
 }
 
 // --- Race Logic ---
@@ -149,9 +166,8 @@ function startRace() {
     gameState.horses.forEach(h => {
         h.position = 0;
         h.finished = false;
-        // Each horse gets a velocity factor based on odds (lower odds = slightly higher potential)
-        // range roughly 0.8 (long shot) to 1.1 (favorite)
-        h.luckFactor = 1.0 + (5 - h.odds) * 0.05;
+        // Adjusted for ~60s race: 100% / (60s * ~60fps) = 0.027 avg per frame
+        h.luckFactor = 1.0;
     });
 
     gameState.lastTickTime = Date.now();
@@ -164,15 +180,14 @@ function raceStep() {
     const currentTime = Date.now();
     const deltaTime = currentTime - gameState.lastTickTime;
 
-    // Update speeds every second (sort of, we do it per frame but randomize values often)
-    // Actually per GDD: "sorteado a cada segundo"
-    if (deltaTime > 1000) {
+    // Update speeds every second for visual variation
+    if (deltaTime > 1000 || gameState.lastTickTime === 0) {
         gameState.horses.forEach(h => {
-            // Speed between 0.2% and 1.5% of track per frame (randomized per second)
-            // Favorites have slight bias
-            const baseMin = 0.1;
-            const baseMax = 0.8;
-            h.currentSpeed = (Math.random() * (baseMax - baseMin) + baseMin) * h.luckFactor;
+            // Speed between 0.015% and 0.04% of track per frame 
+            // Average around 0.027% means 100/0.027 = 3703 frames / 60 = 61 seconds
+            const baseMin = 0.015;
+            const baseMax = 0.040;
+            h.currentSpeed = (Math.random() * (baseMax - baseMin) + baseMin);
         });
         gameState.lastTickTime = currentTime;
     }
@@ -211,22 +226,27 @@ function finishRace(winner) {
 
     setTimeout(() => {
         const won = gameState.selectedHorse === winner.id;
-        const payout = won ? gameState.betAmount * winner.odds : 0;
+        const payout = won ? gameState.betAmount * 2 : 0; // New 2x rule
+
+        const resTitle = document.getElementById('resultTitle');
+        const resMsg = document.getElementById('resultMessage');
+        const resPayout = document.getElementById('resultPayout');
 
         if (won) {
             updateBalance(payout);
-            document.getElementById('resultTitle').textContent = "VOCÊ VENCEU!";
-            document.getElementById('resultTitle').style.color = "var(--accent-green)";
-            document.getElementById('resultPayout').textContent = `+$${payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            document.getElementById('resultPayout').style.color = "var(--accent-green)";
+            resTitle.textContent = "VOCÊ VENCEU!";
+            resTitle.style.color = "var(--accent-green)";
+            resMsg.textContent = `Parabéns, seu cavalo ganhou! Você receberá: $${payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            resPayout.textContent = `+$${payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            resPayout.style.color = "var(--accent-green)";
         } else {
-            document.getElementById('resultTitle').textContent = "VOCÊ PERDEU";
-            document.getElementById('resultTitle').style.color = "var(--danger)";
-            document.getElementById('resultPayout').textContent = `-$${gameState.betAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            document.getElementById('resultPayout').style.color = "var(--danger)";
+            resTitle.textContent = "VOCÊ PERDEU";
+            resTitle.style.color = "var(--danger)";
+            resMsg.textContent = "Que pena! Não foi dessa vez! Mais sorte na próxima";
+            resPayout.textContent = `-$${gameState.betAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            resPayout.style.color = "var(--danger)";
         }
 
-        document.getElementById('resultMessage').textContent = `O ${winner.name} (Raia ${winner.id + 1}) cruzou a linha primeiro!`;
         resultModal.style.display = 'flex';
     }, 500);
 }
