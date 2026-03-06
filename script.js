@@ -1,5 +1,5 @@
 // Minimalist Derby - Core Game Logic
-// v1.2 - Focus on UX and Validation
+// v1.3 - Dynamic Race Duration & Sync Speeds
 
 const INITIAL_BALANCE = 1000;
 const HORSE_COUNT = 6;
@@ -15,6 +15,7 @@ let gameState = {
     isRacing: false,
     horses: [],
     timerSeconds: 10,
+    raceDuration: 10,
     timerInterval: null,
     lastTickTime: 0
 };
@@ -22,6 +23,7 @@ let gameState = {
 // DOM Elements
 const balanceText = document.getElementById('balanceText');
 const timerText = document.getElementById('timerText');
+const durationInput = document.getElementById('raceDurationInput');
 const horseSelection = document.getElementById('horseSelection');
 const track = document.getElementById('track');
 const betInput = document.getElementById('betAmount');
@@ -38,6 +40,7 @@ function init() {
     generateHorses();
     renderUI();
     setupEventListeners();
+    updateTimerDisplay();
 }
 
 function generateHorses() {
@@ -60,7 +63,7 @@ function renderUI() {
         lane.innerHTML = `
             <div class="lane-number">${horse.id + 1}</div>
             <div id="horse-${horse.id}" class="horse" style="left: 0;">
-                <svg viewBox="0 0 100 100" style="width: 40px; height: 40px; fill: ${horse.color};">
+                <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; fill: ${horse.color};">
                     <path d="M90 60c-2-2-5-3-10-3-2 0-4 1-5 2-2-1-4-2-6-2-5 0-10 4-12 8l-5-2c2-3 3-7 3-10 0-8-6-15-15-15-2 0-4 0-6 1l-3-15c0-2-1-4-3-4-3 0-5 2-5 5l1 15c-1 0-2 0-3 0-10 0-18 8-18 18 0 2 0 4 1 6l-5 5c-2 2-2 5 0 7 1 1 2 1 3 1v20c0 3 2 5 5 5s5-2 5-5v-15l5 5c2 2 4 2 6 0l5-5c1-1 1-2 1-3 2 1 4 2 6 2h20c3 0 5-2 5-5s-2-5-5-5h-5l5-5c2-2 3-5 3-8 4 0 8 1 10 3 2 2 5 3 7 3s5-1 7-3c2-2 2-5 0-7z"/>
                 </svg>
             </div>
@@ -74,18 +77,13 @@ function renderUI() {
         const isSelected = gameState.selectedHorse === horse.id;
         const card = document.createElement('div');
         card.className = `horse-card ${isSelected ? 'selected' : ''}`;
-
-        if (isSelected) {
-            card.style.borderColor = horse.color;
-            card.style.boxShadow = `0 0 15px ${horse.color}66`;
-        }
+        if (isSelected) card.style.borderColor = horse.color;
 
         card.innerHTML = `
             <div class="name" style="font-weight: 700; font-size: 1.2rem;">${horse.name}</div>
             <div class="odds" style="color: ${horse.color}; font-weight: 700; font-size: 0.9rem; margin-top: 5px;">PAGA 2.0x</div>
             <div style="width: 40px; height: 5px; background: ${horse.color}; margin: 10px auto; border-radius: 10px;"></div>
         `;
-
         card.onclick = () => handleHorseSelection(horse.id);
         horseSelection.appendChild(card);
     });
@@ -93,22 +91,24 @@ function renderUI() {
 
 function handleHorseSelection(id) {
     if (gameState.isRacing) return;
-
     const bet = parseFloat(betInput.value);
+    const duration = parseInt(durationInput.value);
 
-    // Validation
     if (isNaN(bet) || bet <= 0) {
-        errorMsgText.textContent = "🚨 Por favor, insira um valor!";
+        errorMsgText.textContent = "🚨 Insira um valor!";
         return;
     }
-
     if (bet > gameState.balance) {
         errorMsgText.textContent = "⚠️ Saldo insuficiente!";
         return;
     }
+    if (isNaN(duration) || duration < 5) {
+        alert("Escolha um tempo de pelo menos 5 segundos!");
+        return;
+    }
 
-    // Success - Clear error and start
-    errorMsgText.textContent = "";
+    gameState.raceDuration = duration;
+    gameState.timerSeconds = duration;
     gameState.selectedHorse = id;
     gameState.betAmount = bet;
     updateBalance(-bet);
@@ -120,24 +120,20 @@ function handleHorseSelection(id) {
 function startRace() {
     gameState.isRacing = true;
     betInput.disabled = true;
+    durationInput.disabled = true;
 
-    // Reset horses to start
     gameState.horses.forEach(h => {
         h.position = 0;
         h.finished = false;
         h.currentSpeed = 0;
     });
 
-    // Chronometer (10s)
-    gameState.timerSeconds = 10;
     updateTimerDisplay();
     clearInterval(gameState.timerInterval);
     gameState.timerInterval = setInterval(() => {
         gameState.timerSeconds--;
         updateTimerDisplay();
-        if (gameState.timerSeconds <= 0) {
-            clearInterval(gameState.timerInterval);
-        }
+        if (gameState.timerSeconds <= 0) clearInterval(gameState.timerInterval);
     }, 1000);
 
     gameState.lastTickTime = Date.now();
@@ -158,9 +154,11 @@ function raceLoop() {
 
     if (delta > 1000 || gameState.lastTickTime === 0) {
         gameState.horses.forEach(h => {
-            const baseMin = 0.12;
-            const baseMax = 0.22;
-            h.currentSpeed = Math.random() * (baseMax - baseMin) + baseMin;
+            // Speed logic: (100% / raceDuration) = target % per second
+            // Target % per frame (60fps) = (100 / raceDuration) / 60
+            const targetSpeedPerFrame = (TRACK_FINISH_PERCENT / gameState.raceDuration) / 60;
+            const variance = targetSpeedPerFrame * 0.4; // 40% variance for "catch up" feel
+            h.currentSpeed = targetSpeedPerFrame + (Math.random() * variance * 2 - variance);
         });
         gameState.lastTickTime = now;
     }
@@ -168,8 +166,7 @@ function raceLoop() {
     let winnerFound = null;
     gameState.horses.forEach(h => {
         if (h.finished) return;
-
-        h.position += h.currentSpeed || 0.02;
+        h.position += h.currentSpeed || 0.01;
         const el = document.getElementById(`horse-${h.id}`);
         if (el) el.style.left = `${h.position}%`;
 
@@ -179,23 +176,17 @@ function raceLoop() {
         }
     });
 
-    if (winnerFound) {
-        finishRace(winnerFound);
-    } else {
-        requestAnimationFrame(raceLoop);
-    }
+    if (winnerFound) finishRace(winnerFound);
+    else requestAnimationFrame(raceLoop);
 }
 
 function finishRace(winner) {
     gameState.isRacing = false;
     clearInterval(gameState.timerInterval);
-
     setTimeout(() => {
         const won = gameState.selectedHorse === winner.id;
         const totalPayout = won ? gameState.betAmount * 2 : 0;
-
         resultModal.style.display = 'flex';
-
         if (won) {
             updateBalance(totalPayout);
             resultTitle.textContent = "PARABÉNS!";
@@ -226,9 +217,11 @@ function updateBalanceDisplay() {
 function resetGame() {
     gameState.selectedHorse = null;
     gameState.isRacing = false;
-    gameState.timerSeconds = 10;
+    // Always sync timer display with the duration input at the start/reset
+    gameState.timerSeconds = parseInt(durationInput.value);
     updateTimerDisplay();
     betInput.disabled = false;
+    durationInput.disabled = false;
     betInput.value = '';
     errorMsgText.textContent = "";
     generateHorses();
@@ -236,19 +229,13 @@ function resetGame() {
 }
 
 function setupEventListeners() {
-    betInput.oninput = () => {
-        errorMsgText.textContent = "";
+    betInput.oninput = () => errorMsgText.textContent = "";
+    durationInput.oninput = () => {
+        gameState.timerSeconds = parseInt(durationInput.value) || 0;
+        updateTimerDisplay();
     };
-
-    closeModalBtn.onclick = () => {
-        resultModal.style.display = 'none';
-        resetGame();
-    };
-
-    exitBtn.onclick = () => {
-        resultModal.style.display = 'none';
-        resetGame();
-    };
+    closeModalBtn.onclick = () => { resultModal.style.display = 'none'; resetGame(); };
+    exitBtn.onclick = () => { resultModal.style.display = 'none'; resetGame(); };
 }
 
 init();

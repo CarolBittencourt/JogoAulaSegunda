@@ -12,8 +12,13 @@
     <header>
         <div class="logo">Minimalist Derby</div>
         <div class="stats-container">
+            <div class="stat-item" style="display: flex; flex-direction: column; align-items: center;">
+                <span class="stat-label">Duração (s)</span>
+                <input type="number" id="raceDurationInput" value="10" min="5" max="120"
+                    style="width: 70px; height: 30px; font-size: 1.2rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; text-align: center; border-radius: 8px;">
+            </div>
             <div class="stat-item">
-                <span class="stat-label">Tempo</span>
+                <span class="stat-label">Tempo Restante</span>
                 <span class="stat-value" id="timerText">00:10</span>
             </div>
             <div class="stat-item">
