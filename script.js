@@ -186,7 +186,11 @@ function finishRace(winner) {
     setTimeout(() => {
         const won = gameState.selectedHorse === winner.id;
         const totalPayout = won ? gameState.betAmount * 2 : 0;
+
         resultModal.style.display = 'flex';
+
+        const isBankrupt = gameState.balance <= 0 && !won;
+
         if (won) {
             updateBalance(totalPayout);
             resultTitle.textContent = "PARABÉNS!";
@@ -194,18 +198,28 @@ function finishRace(winner) {
             resultMessage.innerHTML = `Seu cavalo <strong>${winner.name}</strong> ganhou!<br>Você receberá:`;
             resultPayout.textContent = `$${totalPayout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
             resultPayout.style.color = "var(--accent-green)";
+            closeModalBtn.textContent = "Nova Aposta";
         } else {
-            resultTitle.textContent = "QUE PENA!";
+            resultTitle.textContent = isBankrupt ? "BANCA QUEBRADA!" : "QUE PENA!";
             resultTitle.style.color = "var(--danger)";
-            resultMessage.textContent = "Não foi dessa vez! Mais sorte na próxima.";
+            resultMessage.textContent = isBankrupt ? "Você perdeu todo o seu dinheiro!" : "Não foi dessa vez! Mais sorte na próxima.";
             resultPayout.textContent = `-$${gameState.betAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
             resultPayout.style.color = "var(--danger)";
+
+            if (isBankrupt) {
+                closeModalBtn.textContent = "Recomeçar ($1000)";
+            } else {
+                closeModalBtn.textContent = "Nova Aposta";
+            }
         }
     }, 800);
 }
 
 function updateBalance(change) {
     gameState.balance += change;
+    // Safety check for bankruptcy reset
+    if (gameState.balance < 0) gameState.balance = 0;
+
     localStorage.setItem('derby_balance', gameState.balance);
     updateBalanceDisplay();
 }
@@ -215,9 +229,13 @@ function updateBalanceDisplay() {
 }
 
 function resetGame() {
+    // If the player was bankrupt, give them a fresh start
+    if (gameState.balance <= 0) {
+        updateBalance(1000);
+    }
+
     gameState.selectedHorse = null;
     gameState.isRacing = false;
-    // Always sync timer display with the duration input at the start/reset
     gameState.timerSeconds = parseInt(durationInput.value);
     updateTimerDisplay();
     betInput.disabled = false;
