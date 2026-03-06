@@ -1,5 +1,5 @@
 // Minimalist Derby - Core Game Logic
-// Optimized version with Select-to-Start mechanics
+// v1.2 - Focus on UX and Validation
 
 const INITIAL_BALANCE = 1000;
 const HORSE_COUNT = 6;
@@ -25,6 +25,7 @@ const timerText = document.getElementById('timerText');
 const horseSelection = document.getElementById('horseSelection');
 const track = document.getElementById('track');
 const betInput = document.getElementById('betAmount');
+const errorMsgText = document.getElementById('betErrorMessage');
 const resultModal = document.getElementById('resultModal');
 const resultTitle = document.getElementById('resultTitle');
 const resultMessage = document.getElementById('resultMessage');
@@ -33,7 +34,6 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 const exitBtn = document.getElementById('exitBtn');
 
 function init() {
-    console.log("Iniciando Minimalist Derby...");
     updateBalanceDisplay();
     generateHorses();
     renderUI();
@@ -77,13 +77,13 @@ function renderUI() {
 
         if (isSelected) {
             card.style.borderColor = horse.color;
-            card.style.boxShadow = `0 0 15px ${horse.color}44`;
+            card.style.boxShadow = `0 0 15px ${horse.color}66`;
         }
 
         card.innerHTML = `
-            <div class="name" style="font-weight: 700; font-size: 1.1rem;">${horse.name}</div>
-            <div class="odds" style="color: ${horse.color}; font-weight: 600; font-size: 0.8rem;">PAGA 2.0x</div>
-            <div style="width: 30px; height: 4px; background: ${horse.color}; margin: 8px auto; border-radius: 10px;"></div>
+            <div class="name" style="font-weight: 700; font-size: 1.2rem;">${horse.name}</div>
+            <div class="odds" style="color: ${horse.color}; font-weight: 700; font-size: 0.9rem; margin-top: 5px;">PAGA 2.0x</div>
+            <div style="width: 40px; height: 5px; background: ${horse.color}; margin: 10px auto; border-radius: 10px;"></div>
         `;
 
         card.onclick = () => handleHorseSelection(horse.id);
@@ -95,21 +95,25 @@ function handleHorseSelection(id) {
     if (gameState.isRacing) return;
 
     const bet = parseFloat(betInput.value);
+
+    // Validation
     if (isNaN(bet) || bet <= 0) {
-        alert("🚨 Por favor, insira um valor de aposta válido primeiro!");
-        return;
-    }
-    if (bet > gameState.balance) {
-        alert("⚠️ Saldo insuficiente para esta aposta!");
+        errorMsgText.textContent = "🚨 Por favor, insira um valor!";
         return;
     }
 
-    // Confirm selection and start race immediately
+    if (bet > gameState.balance) {
+        errorMsgText.textContent = "⚠️ Saldo insuficiente!";
+        return;
+    }
+
+    // Success - Clear error and start
+    errorMsgText.textContent = "";
     gameState.selectedHorse = id;
     gameState.betAmount = bet;
     updateBalance(-bet);
 
-    renderUI(); // Show selected border
+    renderUI();
     startRace();
 }
 
@@ -124,7 +128,7 @@ function startRace() {
         h.currentSpeed = 0;
     });
 
-    // Chronometer Logic (60s)
+    // Chronometer (60s)
     gameState.timerSeconds = 60;
     updateTimerDisplay();
     clearInterval(gameState.timerInterval);
@@ -152,12 +156,8 @@ function raceLoop() {
     const now = Date.now();
     const delta = now - gameState.lastTickTime;
 
-    // Update speeds every second for visual variation
     if (delta > 1000 || gameState.lastTickTime === 0) {
         gameState.horses.forEach(h => {
-            // Speed calculated to finish around 60s
-            // (100% / 60s) = 1.66% per second
-            // 1.66% / 60fps = 0.027% per frame
             const baseMin = 0.015;
             const baseMax = 0.038;
             h.currentSpeed = Math.random() * (baseMax - baseMin) + baseMin;
@@ -230,11 +230,16 @@ function resetGame() {
     updateTimerDisplay();
     betInput.disabled = false;
     betInput.value = '';
+    errorMsgText.textContent = "";
     generateHorses();
     renderUI();
 }
 
 function setupEventListeners() {
+    betInput.oninput = () => {
+        errorMsgText.textContent = "";
+    };
+
     closeModalBtn.onclick = () => {
         resultModal.style.display = 'none';
         resetGame();

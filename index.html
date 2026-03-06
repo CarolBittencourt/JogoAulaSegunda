@@ -31,14 +31,13 @@
     </main>
 
     <section class="betting-panel">
-        <div class="controls-row">
+        <div class="bet-entry-container">
             <div class="input-group">
-                <label for="betAmount">Valor da Aposta</label>
-                <input type="number" id="betAmount" min="1" step="10" placeholder="Digite o valor">
+                <label for="betAmount">VALOR DA APOSTA</label>
+                <input type="number" id="betAmount" min="1" step="10" placeholder="0.00">
             </div>
-            <div style="font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px;">
-                Clique no cavalo para iniciar a corrida
-            </div>
+            <div id="betErrorMessage" class="error-msg"></div>
+            <div class="instruction">Clique em um cavalo para começar</div>
         </div>
 
         <div class="horses-selection" id="horseSelection">
