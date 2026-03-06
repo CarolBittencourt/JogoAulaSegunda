@@ -19,9 +19,15 @@
 <body>
     <header>
         <div class="logo">Minimalist Derby</div>
-        <div class="balance-container">
-            <span class="balance-label">Seu Saldo</span>
-            <span class="balance-amount" id="balanceText">$1,000.00</span>
+        <div style="display: flex; gap: 2rem; align-items: center;">
+            <div class="timer-container" style="text-align: right;">
+                <span class="balance-label">Tempo</span>
+                <span class="balance-amount" id="timerText" style="color: var(--inox);">01:00</span>
+            </div>
+            <div class="balance-container">
+                <span class="balance-label">Seu Saldo</span>
+                <span class="balance-amount" id="balanceText">$1,000.00</span>
+            </div>
         </div>
     </header>
 
