@@ -4,77 +4,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Derby | Modern Horse Racing Simulator</title>
-    <meta name="description"
-        content="A sleek, high-contrast minimalist horse racing simulation. Choose your horse, place your bet, and watch the race unfold in a sophisticated digital derby.">
-
-    <!-- Open Graph / SEO -->
-    <meta property="og:title" content="Minimalist Derby">
-    <meta property="og:description" content="Advanced Horse Racing Simulation with Modern UI.">
-    <meta property="og:type" content="website">
-
-    <link rel="stylesheet" href="style.css">
+    <title>Minimalist Derby | Modern Racing</title>
+    <link rel="stylesheet" href="style.css?v=1.1">
 </head>
 
 <body>
     <header>
         <div class="logo">Minimalist Derby</div>
-        <div style="display: flex; gap: 2rem; align-items: center;">
-            <div class="timer-container" style="text-align: right;">
-                <span class="balance-label">Tempo</span>
-                <span class="balance-amount" id="timerText" style="color: var(--inox);">01:00</span>
+        <div class="stats-container">
+            <div class="stat-item">
+                <span class="stat-label">Tempo</span>
+                <span class="stat-value" id="timerText">01:00</span>
             </div>
-            <div class="balance-container">
-                <span class="balance-label">Seu Saldo</span>
-                <span class="balance-amount" id="balanceText">$1,000.00</span>
+            <div class="stat-item">
+                <span class="stat-label">Seu Saldo</span>
+                <span class="stat-value" id="balanceText">$1.000,00</span>
             </div>
         </div>
     </header>
 
     <main>
         <div id="track">
-            <!-- Horses will be injected here by script.js -->
             <div class="finish-line-label">Linha de Chegada</div>
+            <!-- Lanes injected by JS -->
         </div>
     </main>
 
     <section class="betting-panel">
-        <div class="horses-selection" id="horseSelection">
-            <!-- Cards will be injected here by script.js -->
-        </div>
-
-        <div class="controls">
+        <div class="controls-row">
             <div class="input-group">
                 <label for="betAmount">Valor da Aposta</label>
-                <input type="number" id="betAmount" min="1" step="10" placeholder="Digite o valor...">
+                <input type="number" id="betAmount" min="1" step="10" placeholder="Digite o valor">
             </div>
-            <button id="startRaceBtn" disabled>Confirmar Aposta & Iniciar</button>
-            <button id="resetBalanceBtn"
-                style="background: transparent; border: 1px solid rgba(255,255,255,0.1); margin-top: 10px; font-size: 0.7rem;">Resetar
-                Saldo</button>
+            <div style="font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px;">
+                Clique no cavalo para iniciar a corrida
+            </div>
+        </div>
+
+        <div class="horses-selection" id="horseSelection">
+            <!-- Horse Cards injected by JS -->
         </div>
     </section>
 
-    <!-- Results Modal -->
+    <!-- Modal de Resultado -->
     <div id="resultModal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="resultTitle">VOCÊ VENCEU!</h2>
-            <p id="resultMessage">Mensagem de resultado aqui.</p>
-            <div class="payout" id="resultPayout">$0.00</div>
+            <h2 id="resultTitle" style="font-size: 2.5rem; margin-bottom: 1rem;">FILTRADO</h2>
+            <p id="resultMessage" style="font-size: 1.2rem; margin-bottom: 2rem; color: #BCC6CC;"></p>
+            <div id="resultPayout" style="font-size: 2rem; font-weight: 700; margin-bottom: 3rem;"></div>
+
             <div style="display: flex; gap: 1rem; justify-content: center;">
-                <button id="closeModalBtn">Nova Aposta</button>
+                <button id="closeModalBtn" style="background: var(--accent-green);">Nova Aposta</button>
                 <button id="exitBtn"
                     style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">Sair</button>
             </div>
         </div>
     </div>
 
-    <!-- Hidden template for horse asset -->
-    <script id="horseAssetPath" type="text/plain">
-        /* This is where the JS will find the asset path */
-    </script>
-
-    <script src="script.js"></script>
+    <script src="script.js?v=1.1"></script>
 </body>
 
 </html>

@@ -1,31 +1,12 @@
 // Minimalist Derby - Core Game Logic
-// Developed with a high-contrast minimalist aesthetic
+// Optimized version with Select-to-Start mechanics
 
 const INITIAL_BALANCE = 1000;
 const HORSE_COUNT = 6;
-const TRACK_FINISH_PERCENT = 95; // % of track width to win
+const TRACK_FINISH_PERCENT = 95;
 
-const horseNames = ["Midnight", "Iridium", "Onyx", "Eclipse", "Ghost", "Zenith", "Neon", "Shadow"];
-const horseColors = [
-    "#0080FF", // Electric Blue
-    "#10B981", // Emerald Green
-    "#F59E0B", // Amber
-    "#8B5CF6", // Purple
-    "#EC4899", // Pink
-    "#06B6D4"  // Cyan
-];
-
-// DOM Elements
-const balanceText = document.getElementById('balanceText');
-const timerText = document.getElementById('timerText');
-const horseSelection = document.getElementById('horseSelection');
-const track = document.getElementById('track');
-const betInput = document.getElementById('betAmount');
-const startBtn = document.getElementById('startRaceBtn');
-const resetBtn = document.getElementById('resetBalanceBtn');
-const resultModal = document.getElementById('resultModal');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const exitBtn = document.getElementById('exitBtn');
+const horseNames = ["Midnight", "Iridium", "Onyx", "Eclipse", "Ghost", "Zenith"];
+const horseColors = ["#0080FF", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4"];
 
 let gameState = {
     balance: parseFloat(localStorage.getItem('derby_balance')) || INITIAL_BALANCE,
@@ -33,59 +14,45 @@ let gameState = {
     betAmount: 0,
     isRacing: false,
     horses: [],
-    lastTickTime: 0,
     timerSeconds: 60,
-    timerInterval: null
+    timerInterval: null,
+    lastTickTime: 0
 };
 
-// --- Initialization ---
+// DOM Elements
+const balanceText = document.getElementById('balanceText');
+const timerText = document.getElementById('timerText');
+const horseSelection = document.getElementById('horseSelection');
+const track = document.getElementById('track');
+const betInput = document.getElementById('betAmount');
+const resultModal = document.getElementById('resultModal');
+const resultTitle = document.getElementById('resultTitle');
+const resultMessage = document.getElementById('resultMessage');
+const resultPayout = document.getElementById('resultPayout');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const exitBtn = document.getElementById('exitBtn');
 
 function init() {
-    updateBalance(0);
+    console.log("Iniciando Minimalist Derby...");
+    updateBalanceDisplay();
     generateHorses();
     renderUI();
     setupEventListeners();
 }
 
 function generateHorses() {
-    gameState.horses = [];
-    for (let i = 0; i < HORSE_COUNT; i++) {
-        gameState.horses.push({
-            id: i,
-            name: horseNames[i % horseNames.length],
-            color: horseColors[i % horseColors.length],
-            position: 0,
-            currentSpeed: 0,
-            finished: false
-        });
-    }
+    gameState.horses = horseColors.map((color, i) => ({
+        id: i,
+        name: horseNames[i],
+        color: color,
+        position: 0,
+        currentSpeed: 0,
+        finished: false
+    }));
 }
 
 function renderUI() {
-    // Render Horse Cards
-    horseSelection.innerHTML = '';
-    gameState.horses.forEach(horse => {
-        const isSelected = gameState.selectedHorse === horse.id;
-        const card = document.createElement('div');
-        card.className = `horse-card ${isSelected ? 'selected' : ''}`;
-
-        if (isSelected) {
-            card.style.borderColor = horse.color;
-            card.style.boxShadow = `0 0 15px ${horse.color}44`;
-        } else {
-            card.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        }
-
-        card.innerHTML = `
-            <div class="name" style="font-weight: 700; font-size: 1.1rem;">${horse.name}</div>
-            <div class="odds" style="color: ${horse.color}; font-weight: 600;">Paga 2x</div>
-            <div style="width: 30px; height: 4px; background: ${horse.color}; margin: 8px auto; border-radius: 10px;"></div>
-        `;
-        card.onclick = () => selectHorseAndStart(horse.id);
-        horseSelection.appendChild(card);
-    });
-
-    // Render Track Lanes
+    // Render Track
     track.innerHTML = '<div class="finish-line-label">Linha de Chegada</div>';
     gameState.horses.forEach(horse => {
         const lane = document.createElement('div');
@@ -100,47 +67,64 @@ function renderUI() {
         `;
         track.appendChild(lane);
     });
+
+    // Render Horse Cards
+    horseSelection.innerHTML = '';
+    gameState.horses.forEach(horse => {
+        const isSelected = gameState.selectedHorse === horse.id;
+        const card = document.createElement('div');
+        card.className = `horse-card ${isSelected ? 'selected' : ''}`;
+
+        if (isSelected) {
+            card.style.borderColor = horse.color;
+            card.style.boxShadow = `0 0 15px ${horse.color}44`;
+        }
+
+        card.innerHTML = `
+            <div class="name" style="font-weight: 700; font-size: 1.1rem;">${horse.name}</div>
+            <div class="odds" style="color: ${horse.color}; font-weight: 600; font-size: 0.8rem;">PAGA 2.0x</div>
+            <div style="width: 30px; height: 4px; background: ${horse.color}; margin: 8px auto; border-radius: 10px;"></div>
+        `;
+
+        card.onclick = () => handleHorseSelection(horse.id);
+        horseSelection.appendChild(card);
+    });
 }
 
-function updateBalance(amountChange) {
-    gameState.balance += amountChange;
-    localStorage.setItem('derby_balance', gameState.balance);
-    balanceText.textContent = `$${gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-}
-
-function selectHorseAndStart(id) {
+function handleHorseSelection(id) {
     if (gameState.isRacing) return;
 
     const bet = parseFloat(betInput.value);
     if (isNaN(bet) || bet <= 0) {
-        alert("Por favor, insira um valor de aposta válido primeiro!");
+        alert("🚨 Por favor, insira um valor de aposta válido primeiro!");
         return;
     }
     if (bet > gameState.balance) {
-        alert("Saldo insuficiente!");
+        alert("⚠️ Saldo insuficiente para esta aposta!");
         return;
     }
 
+    // Confirm selection and start race immediately
     gameState.selectedHorse = id;
     gameState.betAmount = bet;
     updateBalance(-bet);
 
-    renderUI();
+    renderUI(); // Show selected border
     startRace();
 }
 
 function startRace() {
     gameState.isRacing = true;
     betInput.disabled = true;
-    startBtn.disabled = true;
 
+    // Reset horses to start
     gameState.horses.forEach(h => {
         h.position = 0;
         h.finished = false;
         h.currentSpeed = 0;
     });
 
-    // Start Timer
+    // Chronometer Logic (60s)
     gameState.timerSeconds = 60;
     updateTimerDisplay();
     clearInterval(gameState.timerInterval);
@@ -153,7 +137,7 @@ function startRace() {
     }, 1000);
 
     gameState.lastTickTime = Date.now();
-    requestAnimationFrame(raceStep);
+    requestAnimationFrame(raceLoop);
 }
 
 function updateTimerDisplay() {
@@ -162,19 +146,23 @@ function updateTimerDisplay() {
     timerText.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 }
 
-function raceStep() {
+function raceLoop() {
     if (!gameState.isRacing) return;
 
-    const currentTime = Date.now();
-    const deltaTime = currentTime - gameState.lastTickTime;
+    const now = Date.now();
+    const delta = now - gameState.lastTickTime;
 
-    if (deltaTime > 1000 || gameState.lastTickTime === 0) {
+    // Update speeds every second for visual variation
+    if (delta > 1000 || gameState.lastTickTime === 0) {
         gameState.horses.forEach(h => {
+            // Speed calculated to finish around 60s
+            // (100% / 60s) = 1.66% per second
+            // 1.66% / 60fps = 0.027% per frame
             const baseMin = 0.015;
-            const baseMax = 0.040;
-            h.currentSpeed = (Math.random() * (baseMax - baseMin) + baseMin);
+            const baseMax = 0.038;
+            h.currentSpeed = Math.random() * (baseMax - baseMin) + baseMin;
         });
-        gameState.lastTickTime = currentTime;
+        gameState.lastTickTime = now;
     }
 
     let winnerFound = null;
@@ -182,8 +170,8 @@ function raceStep() {
         if (h.finished) return;
 
         h.position += h.currentSpeed || 0.02;
-        const horseEl = document.getElementById(`horse-${h.id}`);
-        if (horseEl) horseEl.style.left = `${h.position}%`;
+        const el = document.getElementById(`horse-${h.id}`);
+        if (el) el.style.left = `${h.position}%`;
 
         if (h.position >= TRACK_FINISH_PERCENT) {
             h.finished = true;
@@ -194,7 +182,7 @@ function raceStep() {
     if (winnerFound) {
         finishRace(winnerFound);
     } else {
-        requestAnimationFrame(raceStep);
+        requestAnimationFrame(raceLoop);
     }
 }
 
@@ -204,64 +192,57 @@ function finishRace(winner) {
 
     setTimeout(() => {
         const won = gameState.selectedHorse === winner.id;
-        const payout = won ? gameState.betAmount * 2 : 0;
-
-        const resTitle = document.getElementById('resultTitle');
-        const resMsg = document.getElementById('resultMessage');
-        const resPayout = document.getElementById('resultPayout');
-
-        if (won) {
-            updateBalance(payout);
-            resTitle.textContent = "VOCÊ VENCEU!";
-            resTitle.style.color = "var(--accent-green)";
-            resMsg.textContent = `Parabéns, seu cavalo ganhou! Você receberá: $${payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            resPayout.textContent = `+$${payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            resPayout.style.color = "var(--accent-green)";
-        } else {
-            resTitle.textContent = "VOCÊ PERDEU";
-            resTitle.style.color = "var(--danger)";
-            resMsg.textContent = "Que pena! Não foi dessa vez! Mais sorte na próxima";
-            resPayout.textContent = `-$${gameState.betAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            resPayout.style.color = "var(--danger)";
-        }
+        const totalPayout = won ? gameState.betAmount * 2 : 0;
 
         resultModal.style.display = 'flex';
-    }, 500);
+
+        if (won) {
+            updateBalance(totalPayout);
+            resultTitle.textContent = "PARABÉNS!";
+            resultTitle.style.color = "var(--accent-green)";
+            resultMessage.innerHTML = `Seu cavalo <strong>${winner.name}</strong> ganhou!<br>Você receberá:`;
+            resultPayout.textContent = `$${totalPayout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            resultPayout.style.color = "var(--accent-green)";
+        } else {
+            resultTitle.textContent = "QUE PENA!";
+            resultTitle.style.color = "var(--danger)";
+            resultMessage.textContent = "Não foi dessa vez! Mais sorte na próxima.";
+            resultPayout.textContent = `-$${gameState.betAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            resultPayout.style.color = "var(--danger)";
+        }
+    }, 800);
 }
 
-function resetRace() {
+function updateBalance(change) {
+    gameState.balance += change;
+    localStorage.setItem('derby_balance', gameState.balance);
+    updateBalanceDisplay();
+}
+
+function updateBalanceDisplay() {
+    balanceText.textContent = `$${gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+}
+
+function resetGame() {
     gameState.selectedHorse = null;
     gameState.isRacing = false;
     gameState.timerSeconds = 60;
     updateTimerDisplay();
-
     betInput.disabled = false;
     betInput.value = '';
-
     generateHorses();
     renderUI();
 }
 
 function setupEventListeners() {
-    startBtn.onclick = () => {
-        if (gameState.selectedHorse !== null) startRace();
-    };
-
-    resetBtn.onclick = () => {
-        if (confirm("Resetar saldo para $1,000.00?")) {
-            gameState.balance = 0;
-            updateBalance(1000);
-        }
-    };
-
     closeModalBtn.onclick = () => {
         resultModal.style.display = 'none';
-        resetRace();
+        resetGame();
     };
 
     exitBtn.onclick = () => {
         resultModal.style.display = 'none';
-        resetRace();
+        resetGame();
     };
 }
 
